@@ -121,7 +121,9 @@ async function handleMessage(from, text) {
     }
 
     case STEPS.ASK_SHORT_PACKAGE: {
-      const pkg = SHORT_STAY_PACKAGES.find(p => lower.includes(p.hours.toString()));
+      const numMatch = text.trim().match(/^(\d+)/);
+      const requestedHours = numMatch ? parseInt(numMatch[1], 10) : null;
+      const pkg = SHORT_STAY_PACKAGES.find(p => p.hours === requestedHours);
       if (!pkg) {
         const menu = SHORT_STAY_PACKAGES.map(p => `✅ ${p.label} – ₹${p.price}`).join('\n');
         await sendText(from, `Please choose one of these:\n${menu}`);
