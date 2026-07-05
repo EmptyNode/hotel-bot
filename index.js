@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { sendText, sendButtons } = require('./whatsapp');
 const { appendBooking } = require('./sheets');
-const { STEPS, getSession, resetSession, looksLikeDate, looksLikeTime, looksLikeNumber } = require('./conversation');
+const { sessions, STEPS, getSession, resetSession, looksLikeDate, looksLikeTime, looksLikeNumber } = require('./conversation');
 const { SHORT_STAY_PACKAGES, NIGHT_STAY, MULTI_DAY_RATE_PER_NIGHT, BOOKING_TYPES } = require('./pricing');
 
 const app = express();
@@ -22,11 +22,16 @@ app.get('/webhook', (req, res) => {
 // ---------- Incoming messages ----------
 app.post('/webhook', async (req, res) => {
   res.sendStatus(200); // ack fast, Meta expects this
+  console.log('--- Incoming webhook hit ---');
+  console.log(JSON.stringify(req.body, null, 2));
   try {
     const entry = req.body.entry?.[0];
     const change = entry?.changes?.[0];
     const message = change?.value?.messages?.[0];
-    if (!message) return;
+    if (!message) {
+      console.log('No message object found in payload (likely a status update).');
+      return;
+    }
 
     const from = message.from;
     let text = '';
@@ -45,6 +50,9 @@ app.post('/webhook', async (req, res) => {
     await handleMessage(from, text);
   } catch (err) {
     console.error('Webhook error:', err.message);
+    if (err.response) {
+      console.error('Full API error response:', JSON.stringify(err.response.data, null, 2));
+    }
   }
 });
 
@@ -57,6 +65,7 @@ function welcomeMessage() {
 
 async function handleMessage(from, text) {
   const session = getSession(from);
+  console.log(`[MSG] from=${from} text="${text}" currentStep=${session.step} totalSessionsInMemory=${Object.keys(sessions).length}`);
   const lower = text.toLowerCase();
 
   if (['hi', 'hello', 'start', 'book', 'menu'].includes(lower)) {
@@ -261,4 +270,4 @@ async function notifyOwner(booking) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Hotel bot running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Hotel bot running on port ${PORT} - DEBUG LOGGING ENABLED`));
