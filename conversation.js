@@ -35,7 +35,11 @@ function getSession(phone) {
 }
 
 function resetSession(phone) {
-  sessions[phone] = { step: STEPS.START, data: { phone } };
+  if (!sessions[phone]) {
+    sessions[phone] = {};
+  }
+  sessions[phone].step = STEPS.START;
+  sessions[phone].data = { phone };
 }
 
 // Accepts 12/08/2025, 12-08-2025, and "today"/"tomorrow"
